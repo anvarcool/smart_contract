@@ -124,8 +124,8 @@ contract Roles is Utils{
 contract Education_system is Roles{
 
     mapping (string => address[]) public students_waiting_approval;
-    mapping (address => string[]) person_courses;
-    mapping (address => mapping(string => uint)) presence;
+    mapping (address => string[]) public person_courses;
+    mapping (address => mapping(string => uint)) public presence;
     
     struct Schedule{
         string course_name;
@@ -141,7 +141,7 @@ contract Education_system is Roles{
 
     mapping (address => Mark[]) person_marks;
     mapping (string => Mark[]) course_marks;
-    mapping (string  => uint[2]) sum_num_marks;
+    mapping (string  => uint[2]) public sum_num_marks;
 
     event new_course(string course_name);
 
@@ -193,7 +193,7 @@ contract Education_system is Roles{
     function remove_lesson(string memory course_name, uint datetime) public isCourseTeacher(msg.sender, course_name){
         // datetime - дата и время в формате timestamp
         uint[] memory schedule = all_courses[course_name].schedule;
-        for (uint i = schedule.length; i >= 0; i--){
+        for (uint i = 0; i < schedule.length; i++){
             if (schedule[i] == datetime){
                 delete all_courses[course_name].schedule[i];
                 break;
@@ -204,7 +204,7 @@ contract Education_system is Roles{
     function edit_lesson(string memory course_name, uint datetime_old, uint datetime_new) public isCourseTeacher(msg.sender, course_name){
         // datetime - дата и время в формате timestamp
         uint[] memory schedule = all_courses[course_name].schedule;
-        for (uint i = schedule.length; i >= 0; i--){
+        for (uint i = 0; i < schedule.length; i++){
             if (schedule[i] == datetime_old){
                 all_courses[course_name].schedule[i] = datetime_new;
                 break;
@@ -309,15 +309,25 @@ contract Education_system is Roles{
     function student_statistics(address student) public returns(string[] memory results){
         string[] memory courses = person_courses[student];
         Mark[] memory marks = person_marks[student];
+        for (uint i = 0; i < courses.length; i++){
+            sum_num_marks[courses[i]][0] = 0;
+            sum_num_marks[courses[i]][1] = 0;
+        }
         for (uint i = 0; i < marks.length; i++){
             sum_num_marks[marks[i].course_name][0] += marks[i].mark;
             sum_num_marks[marks[i].course_name][1]++;
         }
-        for (uint i = 0; i < courses.length; i++){
-            uint avg_mark = (sum_num_marks[courses[i]][0] * 100) / sum_num_marks[courses[i]][1];            
+        results = new string[](courses.length);
+        for (uint j = 0; j < courses.length; j++){
+            uint avg_mark = (sum_num_marks[courses[j]][0] * 100) / sum_num_marks[courses[j]][1];            
             string memory avg = string.concat(toString(avg_mark / 100), ".", toString(avg_mark % 100)) ;
-            results[i] = string.concat(courses[i], " ", avg, " ",toString(presence[student][courses[i]]));
+            results[j] = string.concat(courses[j], " ", avg, " ",toString(presence[student][courses[j]]));
         }
         return results;
+    }
+
+    function results_getter(string memory courseName) public view returns(uint avg_mark){
+        avg_mark = (sum_num_marks[courseName][0] * 100) / sum_num_marks[courseName][1];
+        return (sum_num_marks[courseName][0] * 100) / sum_num_marks[courseName][1];
     }
 }
