@@ -1,3 +1,4 @@
+import { keccak256, toUtf8Bytes } from "ethers";
 import { loadFixture, ethers, expect } from "./setup";
 
 describe("education_system", function() {
@@ -76,7 +77,7 @@ describe("education_system", function() {
     it("should add lesson to the course", async function () {
         const { user1, user2, education_system } = await loadFixture(deploy);
         const courseName = "Распределенные реестры";
-        const lessonTimestamp = 17000;
+        const lessonTimestamp = 17000n;
         await education_system.connect(user1).add_person(user2.address, true);
         await education_system.connect(user1).create_course(courseName);
         await education_system.connect(user1).define_course_teachers(user2.address, courseName);
@@ -84,6 +85,36 @@ describe("education_system", function() {
 
         const sched = await education_system.get_course_schedule(courseName);
         await expect(sched).to.include(lessonTimestamp);
+    });
+
+    it("should remove a lesson from the course schedule", async function () {
+        const { user1, user2, education_system } = await loadFixture(deploy);
+        const courseName = "Распределенные реестры";
+        const lessonTimestamp = 1234567n;
+        await education_system.connect(user1).add_person(user2.address, true);
+        await education_system.connect(user1).create_course(courseName);
+        await education_system.connect(user1).define_course_teachers(user2.address, courseName);
+        await education_system.connect(user2).add_lesson(courseName, lessonTimestamp);
+        await education_system.connect(user2).add_lesson(courseName, 222222n);
+        await education_system.connect(user2).remove_lesson(courseName, lessonTimestamp);
+        const sched = await education_system.get_course_schedule(courseName);
+        await expect(sched).not.to.include(lessonTimestamp);
+    });
+
+    it("should edit a lesson in the course schedule", async function () {
+        const { user1, user2, education_system } = await loadFixture(deploy);
+        const courseName = "Blockchain Basics";
+        const oldTimestamp = 1234567n;
+        const newTimestamp = 7777777n;
+        await education_system.connect(user1).add_person(user2.address, true);
+        await education_system.connect(user1).create_course(courseName);
+        await education_system.connect(user1).define_course_teachers(user2.address, courseName);
+        await education_system.connect(user2).add_lesson(courseName, oldTimestamp);
+
+        await education_system.connect(user2).edit_lesson(courseName, oldTimestamp, newTimestamp);
+        const sched = await education_system.get_course_schedule(courseName);
+        await expect(sched).to.include(newTimestamp);
+        await expect(sched).not.to.include(oldTimestamp);
     });
 
     it("should mark student presence", async function () {
@@ -104,7 +135,7 @@ describe("education_system", function() {
     it("should mark student grade", async function () {
         const { user1, user2, user3, education_system } = await loadFixture(deploy);
         const courseName = "Распределенные реестры";
-        const date = 1234567;
+        const date = 1234567n;
         const mark = 4;
         await education_system.connect(user1).add_person(user2.address, true);
         await education_system.connect(user1).add_person(user3.address, false);
@@ -123,9 +154,9 @@ describe("education_system", function() {
     it("should return person schedule filter by date", async function () {
         const { user1, user2, user3, education_system } = await loadFixture(deploy);
         const courseName = "Распределенные реестры";
-        const lessonTimestamp = 1234567;
-        const startDt = 1200000;
-        const endDt = 1300000;
+        const lessonTimestamp = 1234567n;
+        const startDt = 1200000n;
+        const endDt = 1300000n;
         await education_system.connect(user1).add_person(user2.address, true);
         await education_system.connect(user1).add_person(user3.address, false);
         await education_system.connect(user1).create_course(courseName);
@@ -140,12 +171,12 @@ describe("education_system", function() {
         expect(schedule[0].schedule).to.include(lessonTimestamp);
     });
 
-    it("should return course schedul filter by date", async function () {
+    it("should return course schedule filter by date", async function () {
         const { user1, user2, education_system } = await loadFixture(deploy);
         const courseName = "Распределенные реестры";
-        const lessonTimestamp = 1234567;
-        const startDt = 1200000;
-        const endDt = 1300000;
+        const lessonTimestamp = 1234567n;
+        const startDt = 1200000n;
+        const endDt = 1300000n;
         await education_system.connect(user1).add_person(user2.address, true);
         await education_system.connect(user1).create_course(courseName);
         await education_system.connect(user1).define_course_teachers(user2.address, courseName);
@@ -158,10 +189,10 @@ describe("education_system", function() {
     it("should return student marks filter by date", async function () {
         const { user1, user2, user3, education_system } = await loadFixture(deploy);
         const courseName = "Распределенные реестры";
-        const date = 1234567;
+        const date = 1234567n;
         const mark = 4;
-        const startDt = 1200000;
-        const endDt = 1300000;
+        const startDt = 1200000n;
+        const endDt = 1300000n;
         await education_system.connect(user1).add_person(user2.address, true);
         await education_system.connect(user1).add_person(user3.address, false);
         await education_system.connect(user1).create_course(courseName);
@@ -178,10 +209,10 @@ describe("education_system", function() {
     it("should return course marks filter by date", async function () {
         const { user1, user2, user3, education_system } = await loadFixture(deploy);
         const courseName = "Распределенные реестры";
-        const markDate = 1234567;
+        const markDate = 1234567n;
         const mark = 5;
-        const startDt = 1200000;
-        const endDt = 1300000;
+        const startDt = 1200000n;
+        const endDt = 1300000n;
         await education_system.connect(user1).add_person(user2.address, true);
         await education_system.connect(user1).add_person(user3.address, false);
         await education_system.connect(user1).create_course(courseName);
@@ -193,5 +224,32 @@ describe("education_system", function() {
         const courseMarks = await education_system.check_course_marks(courseName, startDt, endDt);
         expect(courseMarks).to.have.length(1);
         expect(courseMarks[0].mark).to.eq(mark);
+    });
+
+    it("should calculate student statistics", async function () {
+        const { user1, user2, user3, education_system } = await loadFixture(deploy);
+        const courseName = "Распределенные реестры";
+        const markDate1 = 123456n;
+        const mark1 = 5;
+        const markDate2 = 333456n;
+        const mark2 = 3;
+        await education_system.connect(user1).add_person(user2.address, true);
+        await education_system.connect(user1).add_person(user3.address, false);
+        await education_system.connect(user1).create_course(courseName);
+        await education_system.connect(user1).define_course_teachers(user2.address, courseName);
+        await education_system.connect(user3).attend_course(courseName);
+        await education_system.connect(user2).approve_student(user3.address, courseName);
+        await education_system.connect(user2).mark_student(user3.address, courseName, markDate1, mark1);
+        await education_system.connect(user2).mark_student(user3.address, courseName, markDate2, mark2);
+        
+        await education_system.connect(user2).student_presence(user3.address, courseName);
+        await education_system.connect(user2).student_presence(user3.address, courseName);
+        await education_system.connect(user2).student_presence(user3.address, courseName);
+        await education_system.connect(user2).student_presence(user3.address, courseName);
+
+
+        const stats = await education_system.student_statistics(user3.address);
+        const res = await education_system.results_getter(courseName);
+        await expect(res).to.eq(400);
     });
 });
