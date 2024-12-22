@@ -9,4 +9,4 @@ npx hardhat test
 npx hardhat node - чтобы создать локальный блокчейн
 npx hardhat ignition deploy ./ignition/modules/Education_system.ts
 
-потом копируем юнит тесты из backend unit tests, вставляя новые адреса и приватные ключи и радуемся жизни
+потом копируем юнит тесты из backend unit tests, вставляя новые адреса и приватные ключи и радуемся жизни (надо вставить в консоль, естественно)
